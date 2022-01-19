@@ -14,7 +14,7 @@ def resize_and_convert(img, size, resample, quality=100):
     img = trans_fn.resize(img, size, resample)
     img = trans_fn.center_crop(img, size)
     buffer = BytesIO()
-    img.save(buffer, format="jpeg", quality=quality)
+    img.save(buffer, format="png", quality=quality)
     val = buffer.getvalue()
 
     return val
@@ -34,7 +34,7 @@ def resize_multiple(
 def resize_worker(img_file, sizes, resample):
     i, file = img_file
     img = Image.open(file)
-    img = img.convert("RGB")
+    img = img.convert("RGBA")
     out = resize_multiple(img, sizes=sizes, resample=resample)
 
     return i, out
