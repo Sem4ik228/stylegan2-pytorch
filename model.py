@@ -373,8 +373,10 @@ class ToRGB(nn.Module):
         if upsample:
             self.upsample = Upsample(blur_kernel)
 
-        self.conv = ModulatedConv2d(in_channel, 3, 1, style_dim, demodulate=False)
-        self.bias = nn.Parameter(torch.zeros(1, 3, 1, 1))
+        self.out_channels = out_channels
+
+        self.conv = ModulatedConv2d(in_channel, self.out_channels, 1, style_dim, demodulate=False)
+        self.bias = nn.Parameter(torch.zeros(1, self.out_channels, 1, 1))
 
     def forward(self, input, style, skip=None):
         out = self.conv(input, style)
@@ -431,7 +433,7 @@ class Generator(nn.Module):
         self.conv1 = StyledConv(
             self.channels[4], self.channels[4], 3, style_dim, blur_kernel=blur_kernel
         )
-        self.to_rgb1 = ToRGB(self.channels[4], out_channels = 4, style_dim, upsample=False)
+        self.to_rgb1 = ToRGB(self.channels[4], 4, style_dim, upsample=False)
 
         self.log_size = int(math.log(size, 2))
         self.num_layers = (self.log_size - 2) * 2 + 1
@@ -468,7 +470,7 @@ class Generator(nn.Module):
                 )
             )
 
-            self.to_rgbs.append(ToRGB(out_channel, out_channels = 4, style_dim))
+            self.to_rgbs.append(ToRGB(out_channel, 4, style_dim))
 
             in_channel = out_channel
 
@@ -550,6 +552,7 @@ class Generator(nn.Module):
         out = self.conv1(out, latent[:, 0], noise=noise[0])
 
         skip = self.to_rgb1(out, latent[:, 1])
+        # print(f'skip1: {skip.shape}')
 
         i = 1
         for conv1, conv2, noise1, noise2, to_rgb in zip(
@@ -558,6 +561,7 @@ class Generator(nn.Module):
             out = conv1(out, latent[:, i], noise=noise1)
             out = conv2(out, latent[:, i + 1], noise=noise2)
             skip = to_rgb(out, latent[:, i + 2], skip)
+            # print(f'skip i={i}: {skip.shape}')
 
             i += 2
 
